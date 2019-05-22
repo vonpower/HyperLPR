@@ -89,7 +89,7 @@ def judge_plate_color(img):
         color_index = judge_color(clt.cluster_centers_[secound_index])
 
     if color_index == -1:
-        print clt.cluster_centers_
+        print(clt.cluster_centers_)
         bar = plot_colors(hist, clt.cluster_centers_)
         # show our color bart
         plt.figure()

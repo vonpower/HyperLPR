@@ -104,13 +104,18 @@ model2.load_weights("./model/char_judgement.h5")
 
 
 model = model2
+
+import tensorflow as tf
+global graph
+graph = tf.get_default_graph()
+
 def get_median(data):
    data = sorted(data)
    size = len(data)
    # print size
 
    if size % 2 == 0: # 判断列表长度为偶数
-    median = (data[size//2]+data[size//2-1])/2
+    median = (data[size//2]+data[size//2-1])//2
     data[0] = median
    if size % 2 == 1: # 判断列表长度为奇数
     median = data[(size-1)//2]
@@ -131,24 +136,24 @@ def searchOptimalCuttingPoint(rgb,res_map,start,width_boundingbox,interval_range
     score_list = []
     interval_big = int(width_boundingbox * 0.3)  #
     p = 0
-    for zero_add in xrange(start,start+50,3):
+    for zero_add in range(start,start+50,3):
         # for interval_small in xrange(-0,width_boundingbox/2):
-            for i in xrange(-8,int(width_boundingbox/1)-8):
-                for refine in xrange(refine_s,width_boundingbox/2+3):
-                    p1 = zero_add# this point is province
-                    p2 = p1 + width_boundingbox +refine #
-                    p3 = p2 + width_boundingbox + interval_big+i+1
-                    p4 = p3 + width_boundingbox +refine
-                    p5 = p4 + width_boundingbox +refine
-                    p6 = p5 + width_boundingbox +refine
-                    p7 = p6 + width_boundingbox +refine
-                    if p7>=length:
-                        continue
-                    score = res_map[p1][2]*3 -(res_map[p3][1]+res_map[p4][1]+res_map[p5][1]+res_map[p6][1]+res_map[p7][1])+7
-                    # print score
-                    score_list.append([score,[p1,p2,p3,p4,p5,p6,p7]])
-                    p+=1
-    print p
+        for i in range(-8,int(width_boundingbox/1)-8):
+            for refine in range(refine_s, int(width_boundingbox/2+3)):
+                p1 = zero_add# this point is province
+                p2 = p1 + width_boundingbox +refine #
+                p3 = p2 + width_boundingbox + interval_big+i+1
+                p4 = p3 + width_boundingbox +refine
+                p5 = p4 + width_boundingbox +refine
+                p6 = p5 + width_boundingbox +refine
+                p7 = p6 + width_boundingbox +refine
+                if p7>=length:
+                    continue
+                score = res_map[p1][2]*3 -(res_map[p3][1]+res_map[p4][1]+res_map[p5][1]+res_map[p6][1]+res_map[p7][1])+7
+                # print score
+                score_list.append([score,[p1,p2,p3,p4,p5,p6,p7]])
+                p+=1
+    print(p)
 
     score_list = sorted(score_list , key=lambda x:x[0])
     # for one in score_list[-1][1]:
@@ -157,15 +162,15 @@ def searchOptimalCuttingPoint(rgb,res_map,start,width_boundingbox,interval_range
     # cv2.imshow("one",debug)
     # cv2.waitKey(0)
     #
-    print "寻找最佳点",time.time()-t0
+    print("寻找最佳点",time.time()-t0)
     return score_list[-1]
 
 
 import sys
 
 sys.path.append('../')
-import recognizer as cRP
-import niblack_thresholding as nt
+from . import recognizer as cRP
+from . import niblack_thresholding as nt
 
 def refineCrop(sections,width=16):
     new_sections = []
@@ -176,7 +181,7 @@ def refineCrop(sections,width=16):
 
         sec_center = np.array([section.shape[1]/2,section.shape[0]/2])
         binary_niblack = nt.niBlackThreshold(section,17,-0.255)
-        imagex, contours, hierarchy  = cv2.findContours(binary_niblack,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+        contours, hierarchy  = cv2.findContours(binary_niblack,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
         boxs = []
         for contour in contours:
             x,y,w,h = cv2.boundingRect(contour)
@@ -216,27 +221,14 @@ def refineCrop(sections,width=16):
             new_box[1] = center_c[1]- h
             if new_box[1]<0:
                 new_box[1] = 1
-
             new_box[3] = h*2
-
-
-
-
-
-
-
-
-        section  = section[new_box[1]:new_box[1]+new_box[3],new_box[0]:new_box[0]+new_box[2]]
+        
+        section  = section[int(new_box[1]):int(new_box[1]+new_box[3]), int(new_box[0]):int(new_box[0]+new_box[2])]
         # cv2.imshow("section",section)
         # cv2.waitKey(0)
         new_sections.append(section)
         # print new_box
-
-
     return new_sections
-
-
-
 
 
 def slidingWindowsEval(image):
@@ -254,16 +246,16 @@ def slidingWindowsEval(image):
         data = data.astype(np.float)/255
         data=  np.expand_dims(data,3)
         data_sets.append(data)
-
-    res = model2.predict(np.array(data_sets))
-    print "分割",time.time() - t0
+    with graph.as_default():
+        res = model2.predict(np.array(data_sets))
+    print("分割",time.time() - t0)
 
     pin = res
     p = 1 -  (res.T)[1]
     p = f.gaussian_filter1d(np.array(p,dtype=np.float),3)
     lmin = l.argrelmax(np.array(p),order = 3)[0]
     interval = []
-    for i in xrange(len(lmin)-1):
+    for i in range(len(lmin)-1):
         interval.append(lmin[i+1]-lmin[i])
 
     if(len(interval)>3):
@@ -282,7 +274,7 @@ def slidingWindowsEval(image):
     name = ""
     confidence =0.00
     seg_block = []
-    for x in xrange(1,len(cutting_pts)):
+    for x in range(1,len(cutting_pts)):
         if x != len(cutting_pts)-1 and x!=1:
             section = image[0:36,cutting_pts[x-1]-2:cutting_pts[x]+2]
         elif  x==1:
@@ -310,11 +302,12 @@ def slidingWindowsEval(image):
 
     t0 = time.time()
     for i,one in enumerate(refined):
-        res_pre = cRP.SimplePredict(one, i )
+        with graph.as_default():
+            res_pre = cRP.SimplePredict(one, i )
         # cv2.imshow(str(i),one)
         # cv2.waitKey(0)
         confidence+=res_pre[0]
         name+= res_pre[1]
-    print "字符识别",time.time() - t0
+    print("字符识别",time.time() - t0)
 
     return refined,name,confidence

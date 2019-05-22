@@ -12,7 +12,7 @@ import cv2
 import numpy as np
 
 
-plateType  = [u"蓝牌",u"单层黄牌",u"新能源车牌",u"白色",u"黑色-港澳"]
+plateType  = ["蓝牌","单层黄牌","新能源车牌","白色","黑色-港澳"]
 def Getmodel_tensorflow(nb_classes):
     # nb_classes = len(charset)
 
@@ -47,10 +47,17 @@ def Getmodel_tensorflow(nb_classes):
 model = Getmodel_tensorflow(5)
 model.load_weights("./model/plate_type.h5")
 model.save("./model/plate_type.h5")
+
+import tensorflow as tf
+global graph
+graph = tf.get_default_graph()
+
 def SimplePredict(image):
     image = cv2.resize(image, (34, 9))
+    #print(image.shape)
     image = image.astype(np.float) / 255
-    res = np.array(model.predict(np.array([image]))[0])
+    with graph.as_default():
+        res = np.array(model.predict(np.array([image]))[0])
     return res.argmax()
 
 

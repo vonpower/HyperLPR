@@ -43,10 +43,10 @@ def cropped_from_image(image,rect):
 
 
 def detectPlateRough(image_gray,resize_h = 720,en_scale =1.08 ,top_bottom_padding_rate = 0.05):
-    print image_gray.shape
+    print(image_gray.shape)
 
     if top_bottom_padding_rate>0.2:
-        print "error:top_bottom_padding_rate > 0.2:",top_bottom_padding_rate
+        print("error:top_bottom_padding_rate > 0.2:",top_bottom_padding_rate)
         exit(1)
 
     height = image_gray.shape[0]

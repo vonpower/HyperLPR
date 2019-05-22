@@ -1,8 +1,8 @@
 #coding=utf-8
-import detect
-import  finemapping  as  fm
+from . import detect
+from . import  finemapping  as  fm
 
-import segmentation
+from . import segmentation
 import cv2
 
 import time
@@ -14,15 +14,14 @@ from PIL import ImageDraw
 import json
 
 import sys
-import typeDistinguish as td
+from . import typeDistinguish as td
+import imp
 
 
-reload(sys)
-sys.setdefaultencoding("utf-8")
-
+imp.reload(sys)
 fontC = ImageFont.truetype("./Font/platech.ttf", 14, 0);
 
-import e2e
+from . import e2e
 #寻找车牌左右边界
 
 def find_edge(image):
@@ -56,7 +55,6 @@ def find_edge(image):
 
 
 #垂直边缘检测
-
 def verticalEdgeDetection(image):
     image_sobel = cv2.Sobel(image.copy(),cv2.CV_8U,1,0)
     # image = auto_canny(image_sobel)
@@ -64,12 +62,13 @@ def verticalEdgeDetection(image):
     # img_sobel, CV_8U, 1, 0, 3, 1, 0, BORDER_DEFAULT
     # canny_image  = auto_canny(image)
     flag,thres = cv2.threshold(image_sobel,0,255,cv2.THRESH_OTSU|cv2.THRESH_BINARY)
-    print flag
+    print(flag)
     flag,thres = cv2.threshold(image_sobel,int(flag*0.7),255,cv2.THRESH_BINARY)
     # thres = simpleThres(image_sobel)
     kernal = np.ones(shape=(3,15))
     thres = cv2.morphologyEx(thres,cv2.MORPH_CLOSE,kernal)
     return thres
+
 
 #确定粗略的左右边界
 def horizontalSegmentation(image):
@@ -87,39 +86,30 @@ def horizontalSegmentation(image):
     return image
 
 
-
 #打上boundingbox和标签
 def drawRectBox(image,rect,addText):
-    cv2.rectangle(image, (int(rect[0]), int(rect[1])), (int(rect[0] + rect[2]), int(rect[1] + rect[3])), (0,0, 255), 2,cv2.LINE_AA)
-    cv2.rectangle(image, (int(rect[0]-1), int(rect[1])-16), (int(rect[0] + 115), int(rect[1])), (0, 0, 255), -1,
-                  cv2.LINE_AA)
+    cv2.rectangle(image, (int(rect[0]), int(rect[1])), (int(rect[0] + rect[2]), int(rect[1] + rect[3])), (0,0, 255), 2, cv2.LINE_AA)
+    cv2.rectangle(image, (int(rect[0]-1), int(rect[1])-16), (int(rect[0] + 115), int(rect[1])), (0, 0, 255), -1, cv2.LINE_AA)
 
     img = Image.fromarray(image)
     draw = ImageDraw.Draw(img)
-    draw.text((int(rect[0]+1), int(rect[1]-16)), addText.decode("utf-8"), (255, 255, 255), font=fontC)
+    #draw.text((int(rect[0]+1), int(rect[1]-16)), addText.decode("utf-8"), (255, 255, 255), font=fontC)
+    draw.text((int(rect[0]+1), int(rect[1]-16)), addText, (255, 255, 255), font=fontC)
     imagex = np.array(img)
 
     return imagex
 
 
-
-
-import cache
-import finemapping_vertical as fv
-
+from . import cache
+from . import finemapping_vertical as fv
 
 def RecognizePlateJson(image):
-
     images = detect.detectPlateRough(image,image.shape[0],top_bottom_padding_rate=0.1)
-
     jsons = []
-
     for j,plate in enumerate(images):
-
-
         plate,rect,origin_plate =plate
         res, confidence = e2e.recognizeOne(origin_plate)
-        print "res",res
+        print("res",res)
 
         cv2.imwrite("./"+str(j)+"_rough.jpg",plate)
 
@@ -127,7 +117,6 @@ def RecognizePlateJson(image):
         # plate = cv2.cvtColor(plate, cv2.COLOR_RGB2GRAY)
         plate  =cv2.resize(plate,(136,int(36*2.5)))
         t1 = time.time()
-
 
         ptype = td.SimplePredict(plate)
         if ptype>0 and ptype<4:
@@ -138,13 +127,11 @@ def RecognizePlateJson(image):
         image_rgb = fv.finemappingVertical(image_rgb)
         cache.verticalMappingToFolder(image_rgb)
         # print time.time() - t1,"校正"
-        print "e2e:",e2e.recognizeOne(image_rgb)[0]
+        print("e2e:",e2e.recognizeOne(image_rgb)[0])
         image_gray = cv2.cvtColor(image_rgb,cv2.COLOR_BGR2GRAY)
-
 
         cv2.imwrite("./"+str(j)+".jpg",image_gray)
         # image_gray = horizontalSegmentation(image_gray)
-
 
         t2 = time.time()
         res, confidence = e2e.recognizeOne(image_rgb)
@@ -158,9 +145,9 @@ def RecognizePlateJson(image):
             res_json["w"] = int(rect[2])
             res_json["h"] = int(rect[3])
             jsons.append(res_json)
-    print json.dumps(jsons,ensure_ascii=False,encoding="gb2312")
-
-    return json.dumps(jsons,ensure_ascii=False,encoding="gb2312")
+    #print(json.dumps(jsons,ensure_ascii=False,encoding="gb2312"))
+    ret=json.dumps(jsons,ensure_ascii=False)
+    return ret
 
 
 
@@ -174,7 +161,7 @@ def SimpleRecognizePlateByE2E(image):
         # plate = cv2.cvtColor(plate, cv2.COLOR_RGB2GRAY)
         plate  =cv2.resize(plate,(136,36*2))
         res,confidence = e2e.recognizeOne(origin_plate)
-        print "res",res
+        print("res",res)
 
         t1 = time.time()
         ptype = td.SimplePredict(plate)
@@ -187,17 +174,12 @@ def SimpleRecognizePlateByE2E(image):
         cache.verticalMappingToFolder(image_rgb)
         cv2.imwrite("./"+str(j)+".jpg",image_rgb)
         res,confidence = e2e.recognizeOne(image_rgb)
-        print res,confidence
+        print(res,confidence)
         res_set.append([[],res,confidence])
 
         if confidence>0.7:
             image = drawRectBox(image, rect, res+" "+str(round(confidence,3)))
     return image,res_set
-
-
-
-
-
 
 
 def SimpleRecognizePlate(image):
@@ -218,7 +200,7 @@ def SimpleRecognizePlate(image):
 
         image_rgb = fv.finemappingVertical(image_rgb)
         cache.verticalMappingToFolder(image_rgb)
-        print "e2e:", e2e.recognizeOne(image_rgb)
+        print("e2e:", e2e.recognizeOne(image_rgb))
         image_gray = cv2.cvtColor(image_rgb,cv2.COLOR_RGB2GRAY)
 
         # image_gray = horizontalSegmentation(image_gray)
@@ -228,13 +210,13 @@ def SimpleRecognizePlate(image):
         cv2.imwrite("./"+str(j)+".jpg",image_gray)
         # cv2.imshow("image",image_gray)
         # cv2.waitKey(0)
-        print "校正",time.time() - t1,"s"
+        print("校正",time.time() - t1,"s")
         # cv2.imshow("image,",image_gray)
         # cv2.waitKey(0)
         t2 = time.time()
         val = segmentation.slidingWindowsEval(image_gray)
         # print val
-        print "分割和识别",time.time() - t2,"s"
+        print("分割和识别",time.time() - t2,"s")
         if len(val)==3:
             blocks, res, confidence = val
             if confidence/7>0.7:
@@ -250,13 +232,13 @@ def SimpleRecognizePlate(image):
 
 
             if confidence>0:
-                print "车牌:",res,"置信度:",confidence/7
+                print("车牌:",res,"置信度:",confidence/7)
             else:
                 pass
 
                 # print "不确定的车牌:", res, "置信度:", confidence
 
-    print time.time() - t0,"s"
+    print(time.time() - t0,"s")
     return image,res_set
 
 

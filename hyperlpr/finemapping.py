@@ -3,9 +3,9 @@ import cv2
 import numpy as np
 
 
-import niblack_thresholding as nt
+from . import niblack_thresholding as nt
 
-import deskew
+from . import deskew
 
 def fitLine_ransac(pts,zero_add = 0 ):
     if len(pts)>=2:
@@ -38,7 +38,7 @@ def findContoursAndDrawBoundingBox(image_rgb):
         binary_niblack = cv2.adaptiveThreshold(gray_image,255,cv2.ADAPTIVE_THRESH_MEAN_C,cv2.THRESH_BINARY,17,k)
         # cv2.imshow("image1",binary_niblack)
         # cv2.waitKey(0)
-        imagex, contours, hierarchy = cv2.findContours(binary_niblack.copy(),cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+        contours, hierarchy = cv2.findContours(binary_niblack.copy(),cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
         for contour in contours:
             bdbox = cv2.boundingRect(contour)
             if (bdbox[3]/float(bdbox[2])>0.7 and bdbox[3]*bdbox[2]>100 and bdbox[3]*bdbox[2]<1200) or (bdbox[3]/float(bdbox[2])>3 and bdbox[3]*bdbox[2]<100):

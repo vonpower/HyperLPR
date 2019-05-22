@@ -2,7 +2,7 @@
 from keras import backend as K
 from keras.models import *
 from keras.layers import *
-import e2e
+from . import e2e
 
 
 def ctc_lambda_func(args):

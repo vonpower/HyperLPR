@@ -7,13 +7,16 @@ import random
 import string
 
 import cv2
-import e2emodel as model
-chars = [u"京", u"沪", u"津", u"渝", u"冀", u"晋", u"蒙", u"辽", u"吉", u"黑", u"苏", u"浙", u"皖", u"闽", u"赣", u"鲁", u"豫", u"鄂", u"湘", u"粤", u"桂",
-             u"琼", u"川", u"贵", u"云", u"藏", u"陕", u"甘", u"青", u"宁", u"新", u"0", u"1", u"2", u"3", u"4", u"5", u"6", u"7", u"8", u"9", u"A",
-             u"B", u"C", u"D", u"E", u"F", u"G", u"H", u"J", u"K", u"L", u"M", u"N", u"P", u"Q", u"R", u"S", u"T", u"U", u"V", u"W", u"X",
-             u"Y", u"Z",u"港",u"学",u"使",u"警",u"澳",u"挂",u"军",u"北",u"南",u"广",u"沈",u"兰",u"成",u"济",u"海",u"民",u"航",u"空"
+from . import e2emodel as model
+chars = ["京", "沪", "津", "渝", "冀", "晋", "蒙", "辽", "吉", "黑", "苏", "浙", "皖", "闽", "赣", "鲁", "豫", "鄂", "湘", "粤", "桂",
+             "琼", "川", "贵", "云", "藏", "陕", "甘", "青", "宁", "新", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A",
+             "B", "C", "D", "E", "F", "G", "H", "J", "K", "L", "M", "N", "P", "Q", "R", "S", "T", "U", "V", "W", "X",
+             "Y", "Z","港","学","使","警","澳","挂","军","北","南","广","沈","兰","成","济","海","民","航","空"
              ];
 pred_model = model.construct_model("./model/ocr_plate_all_w_rnn_2.h5",)
+import tensorflow as tf
+global graph
+graph = tf.get_default_graph()
 import time
 
 
@@ -39,7 +42,8 @@ def recognizeOne(src):
     x_temp = cv2.resize(x_tempx,( 160,40))
     x_temp = x_temp.transpose(1, 0, 2)
     t0 = time.time()
-    y_pred = pred_model.predict(np.array([x_temp]))
+    with graph.as_default():
+        y_pred = pred_model.predict(np.array([x_temp]))
     y_pred = y_pred[:,2:,:]
     # plt.imshow(y_pred.reshape(16,66))
     # plt.show()

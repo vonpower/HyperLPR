@@ -4,7 +4,7 @@ from keras.models import Model, Sequential
 from keras.layers.advanced_activations import PReLU
 from keras.optimizers import adam
 import numpy as np
-
+import tensorflow as tf
 import cv2
 
 def getModel():
@@ -26,7 +26,8 @@ def getModel():
 
 model = getModel()
 model.load_weights("./model/model12.h5")
-
+global graph
+graph = tf.get_default_graph()
 
 def getmodel():
     return model
@@ -50,7 +51,7 @@ def gettest_model():
     ok = Model([input], [dense])
 
     for layer in ok.layers:
-        print layer
+        print(layer)
 
     return ok
 
@@ -60,8 +61,10 @@ def gettest_model():
 def finemappingVertical(image):
     resized = cv2.resize(image,(66,16))
     resized = resized.astype(np.float)/255
-    res= model.predict(np.array([resized]))[0]
-    print "keras_predict",res
+    
+    with graph.as_default():
+        res= model.predict(np.array([resized]))[0]
+    print("keras_predict",res)
     res  =res*image.shape[1]
     res = res.astype(np.int)
     H,T = res
